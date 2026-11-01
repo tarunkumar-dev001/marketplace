@@ -53,7 +53,7 @@ public class AdminController {
 			@RequestParam(defaultValue = "20") int size, Principal principal) {
 		Jwt jwt = authenticatedJwt(principal);
 		Page<OrderResponse> orders = orderService.getAdminOrders(actorUserId(jwt), actorRole(jwt), pageable(page, size))
-				.map(OrderResponse::from);
+				.map(OrderResponse::adminFrom);
 		return ApiResponse.success("Admin orders retrieved", OrderPageResponse.from(orders));
 	}
 

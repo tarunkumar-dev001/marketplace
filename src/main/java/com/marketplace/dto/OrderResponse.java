@@ -10,6 +10,7 @@ import java.util.List;
 public record OrderResponse(
 		Long orderId,
 		OrderStatus status,
+		String customerEmail,
 		String currency,
 		BigDecimal totalAmount,
 		Instant createdAt,
@@ -21,6 +22,7 @@ public record OrderResponse(
 		return new OrderResponse(
 				order.getId(),
 				order.getStatus(),
+				null,
 				order.getCurrency(),
 				order.getTotalAmount(),
 				order.getCreatedAt(),
@@ -39,6 +41,7 @@ public record OrderResponse(
 		return new OrderResponse(
 				order.getId(),
 				order.getStatus(),
+				null,
 				order.getCurrency(),
 				vendorSubtotal,
 				order.getCreatedAt(),
@@ -46,6 +49,19 @@ public record OrderResponse(
 				vendorItems.stream()
 						.map(OrderItemResponse::from)
 						.toList()
+		);
+	}
+
+	public static OrderResponse adminFrom(CustomerOrder order) {
+		return new OrderResponse(
+				order.getId(),
+				order.getStatus(),
+				order.getCustomer().getEmail(),
+				order.getCurrency(),
+				order.getTotalAmount(),
+				order.getCreatedAt(),
+				order.getUpdatedAt(),
+				order.getItems().stream().map(OrderItemResponse::from).toList()
 		);
 	}
 }

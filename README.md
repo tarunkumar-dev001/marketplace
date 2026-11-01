@@ -121,10 +121,19 @@ These environment variables apply to the current PowerShell session. Set them ag
 From the project root:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The default local configuration uses port `8080`. Flyway applies pending migrations when the application starts.
+To seed demo accounts, use `local,demo`. The local profile is not enabled by default. Flyway applies pending migrations when the application starts.
+
+Demo deployments can configure these variables (without adding values to this repository):
+
+- `MARKETPLACE_DEMO_ADMIN_EMAIL`
+- `MARKETPLACE_DEMO_ADMIN_PASSWORD`
+- `MARKETPLACE_DEMO_VENDOR_EMAIL`
+- `MARKETPLACE_DEMO_VENDOR_PASSWORD`
+- `MARKETPLACE_DEMO_CUSTOMER_EMAIL`
+- `MARKETPLACE_DEMO_CUSTOMER_PASSWORD`
 
 Base URL:
 

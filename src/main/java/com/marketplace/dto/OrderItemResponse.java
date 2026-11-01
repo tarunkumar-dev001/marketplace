@@ -1,6 +1,7 @@
 package com.marketplace.dto;
 
 import com.marketplace.entity.OrderItem;
+import com.marketplace.enums.FulfillmentStatus;
 
 import java.math.BigDecimal;
 
@@ -9,7 +10,8 @@ public record OrderItemResponse(
 		String productName,
 		BigDecimal unitPrice,
 		Integer quantity,
-		BigDecimal lineTotal
+		BigDecimal lineTotal,
+		FulfillmentStatus fulfillmentStatus
 ) {
 
 	public static OrderItemResponse from(OrderItem item) {
@@ -18,7 +20,8 @@ public record OrderItemResponse(
 				item.getProductName(),
 				item.getUnitPrice(),
 				item.getQuantity(),
-				item.getLineTotal()
+				item.getLineTotal(),
+				item.getFulfillmentStatus()
 		);
 	}
 }

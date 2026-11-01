@@ -1,6 +1,7 @@
 package com.marketplace.entity;
 
 import com.marketplace.enums.OrderStatus;
+import com.marketplace.enums.FulfillmentStatus;
 import com.marketplace.exception.OrderCancellationNotAllowedException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -81,10 +82,15 @@ public class CustomerOrder {
 	}
 
 	public void cancel() {
-		if (status != OrderStatus.PLACED) {
+		if (status != OrderStatus.PLACED || items.stream().anyMatch(item -> item.getFulfillmentStatus() != FulfillmentStatus.PLACED)) {
 			throw new OrderCancellationNotAllowedException();
 		}
 		status = OrderStatus.CANCELLED;
+		items.forEach(item -> item.setFulfillmentStatus(FulfillmentStatus.CANCELLED));
+	}
+
+	public void setStatus(OrderStatus status) {
+		this.status = status;
 	}
 
 	@PrePersist

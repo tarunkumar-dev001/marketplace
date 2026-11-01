@@ -4,6 +4,7 @@ import com.marketplace.entity.CustomerOrder;
 import com.marketplace.enums.Role;
 import com.marketplace.dto.AdminOrderStatisticsResponse;
 import com.marketplace.dto.VendorOrderStatisticsResponse;
+import com.marketplace.enums.FulfillmentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -22,4 +23,7 @@ public interface OrderService {
 	Page<CustomerOrder> getAdminOrders(Long actorUserId, Role actorRole, Pageable pageable);
 
 	AdminOrderStatisticsResponse getAdminStatistics(Long actorUserId, Role actorRole);
+
+	CustomerOrder updateFulfillmentStatus(Long orderId, Long itemId, FulfillmentStatus status,
+			Long actorUserId, Role actorRole);
 }

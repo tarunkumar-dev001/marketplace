@@ -6,6 +6,8 @@ import com.marketplace.enums.Role;
 import com.marketplace.exception.ProductNotFoundException;
 import com.marketplace.repository.ProductRepository;
 import com.marketplace.repository.UserRepository;
+import com.marketplace.repository.CartItemRepository;
+import com.marketplace.repository.CustomerOrderRepository;
 import com.marketplace.service.ProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,10 +20,19 @@ public class ProductServiceImpl implements ProductService {
 
 	private final ProductRepository productRepository;
 	private final UserRepository userRepository;
+	private final CartItemRepository cartItemRepository;
+	private final CustomerOrderRepository customerOrderRepository;
 
 	public ProductServiceImpl(ProductRepository productRepository, UserRepository userRepository) {
+		this(productRepository, userRepository, null, null);
+	}
+
+	public ProductServiceImpl(ProductRepository productRepository, UserRepository userRepository,
+			CartItemRepository cartItemRepository, CustomerOrderRepository customerOrderRepository) {
 		this.productRepository = productRepository;
 		this.userRepository = userRepository;
+		this.cartItemRepository = cartItemRepository;
+		this.customerOrderRepository = customerOrderRepository;
 	}
 
 	@Override
@@ -97,7 +108,13 @@ public class ProductServiceImpl implements ProductService {
 		User actor = findActiveActor(actorUserId, actorRole);
 		Product product = findProductById(id);
 		authorizeProductManagement(product, actor);
-		productRepository.delete(product);
+		if ((cartItemRepository != null && cartItemRepository.existsByProductId(id))
+				|| (customerOrderRepository != null && customerOrderRepository.existsByItemsProductId(id))) {
+			product.setActive(false);
+			productRepository.save(product);
+		} else {
+			productRepository.delete(product);
+		}
 	}
 
 	private Product findProductById(Long id) {

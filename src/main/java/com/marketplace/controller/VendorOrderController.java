@@ -1,5 +1,6 @@
 package com.marketplace.controller;
 
+import com.marketplace.entity.CustomerOrder;
 import com.marketplace.dto.ApiResponse;
 import com.marketplace.dto.OrderPageResponse;
 import com.marketplace.dto.OrderResponse;
@@ -16,6 +17,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import jakarta.validation.Valid;
+import com.marketplace.dto.UpdateFulfillmentStatusRequest;
 
 import java.security.Principal;
 
@@ -45,6 +51,15 @@ public class VendorOrderController {
 		Jwt jwt = authenticatedJwt(principal);
 		return ApiResponse.success("Vendor order statistics retrieved",
 				orderService.getVendorStatistics(actorUserId(jwt), actorRole(jwt)));
+	}
+
+	@PatchMapping("/{orderId}/items/{itemId}/status")
+	public ApiResponse<OrderResponse> updateItemStatus(@PathVariable Long orderId, @PathVariable Long itemId,
+			@Valid @RequestBody UpdateFulfillmentStatusRequest request, Principal principal) {
+		Jwt jwt = authenticatedJwt(principal);
+		CustomerOrder order = orderService.updateFulfillmentStatus(orderId, itemId, request.status(),
+				actorUserId(jwt), actorRole(jwt));
+		return ApiResponse.success("Order item status updated", OrderResponse.from(order, actorUserId(jwt)));
 	}
 
 	private org.springframework.data.domain.Pageable pageable(int page, int size) {

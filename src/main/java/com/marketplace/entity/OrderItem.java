@@ -1,7 +1,10 @@
 package com.marketplace.entity;
 
+import com.marketplace.enums.FulfillmentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -50,6 +53,10 @@ public class OrderItem {
 	@Column(name = "line_total", nullable = false, precision = 19, scale = 2)
 	private BigDecimal lineTotal;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "fulfillment_status", nullable = false, length = 20)
+	private FulfillmentStatus fulfillmentStatus = FulfillmentStatus.PLACED;
+
 	protected OrderItem() {
 	}
 
@@ -94,5 +101,13 @@ public class OrderItem {
 
 	public BigDecimal getLineTotal() {
 		return lineTotal;
+	}
+
+	public FulfillmentStatus getFulfillmentStatus() {
+		return fulfillmentStatus;
+	}
+
+	public void setFulfillmentStatus(FulfillmentStatus fulfillmentStatus) {
+		this.fulfillmentStatus = fulfillmentStatus;
 	}
 }

@@ -46,6 +46,9 @@ public class UserServiceImpl {
 	public User updateStatus(Long id, boolean active, Long actorUserId, Role actorRole) {
 		findActiveAdmin(actorUserId, actorRole);
 		User user = userRepository.findById(id).orElseThrow(UserNotFoundException::new);
+		if (!active && user.getId() != null && user.getId().equals(actorUserId)) {
+			throw new IllegalArgumentException("An administrator cannot deactivate their own account");
+		}
 		user.setActive(active);
 		return userRepository.save(user);
 	}

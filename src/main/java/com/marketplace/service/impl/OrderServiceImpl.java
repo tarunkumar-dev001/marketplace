@@ -6,6 +6,7 @@ import com.marketplace.entity.Product;
 import com.marketplace.entity.User;
 import com.marketplace.enums.Role;
 import com.marketplace.enums.OrderStatus;
+import com.marketplace.enums.FulfillmentStatus;
 import com.marketplace.dto.AdminOrderStatisticsResponse;
 import com.marketplace.dto.VendorOrderStatisticsResponse;
 import com.marketplace.exception.OrderNotFoundException;
@@ -122,7 +123,41 @@ public class OrderServiceImpl implements OrderService {
 	@Transactional(readOnly = true)
 	public Page<CustomerOrder> getAdminOrders(Long actorUserId, Role actorRole, Pageable pageable) {
 		findActiveAdmin(actorUserId, actorRole);
-		return customerOrderRepository.findAllWithItems(pageable);
+		Page<CustomerOrder> page = customerOrderRepository.findAll(pageable);
+		if (page.isEmpty()) {
+			return page;
+		}
+		List<Long> ids = page.getContent().stream().map(CustomerOrder::getId).toList();
+		Map<Long, CustomerOrder> byId = customerOrderRepository.findAllWithItemsById(ids).stream()
+				.collect(Collectors.toMap(CustomerOrder::getId, Function.identity()));
+		return new PageImpl<>(ids.stream().map(byId::get).toList(), pageable, page.getTotalElements());
+	}
+
+	@Override
+	@Transactional
+	public CustomerOrder updateFulfillmentStatus(Long orderId, Long itemId, FulfillmentStatus status,
+			Long actorUserId, Role actorRole) {
+		User vendor = findActiveVendor(actorUserId, actorRole);
+		CustomerOrder order = customerOrderRepository.findByIdWithItems(orderId)
+				.orElseThrow(OrderNotFoundException::new);
+		if (order.getStatus() == OrderStatus.CANCELLED) {
+			throw new IllegalArgumentException("Cancelled orders cannot be updated");
+		}
+		OrderItem item = order.getItems().stream().filter(candidate -> candidate.getId().equals(itemId)).findFirst()
+				.orElseThrow(OrderNotFoundException::new);
+		if (item.getVendor() == null || !vendor.getId().equals(item.getVendor().getId())) {
+			throw accessDenied();
+		}
+		boolean valid = status == FulfillmentStatus.SHIPPED && item.getFulfillmentStatus() == FulfillmentStatus.PLACED
+				|| status == FulfillmentStatus.DELIVERED && item.getFulfillmentStatus() == FulfillmentStatus.SHIPPED;
+		if (!valid) {
+			throw new IllegalArgumentException("Invalid fulfillment transition");
+		}
+		item.setFulfillmentStatus(status);
+		if (order.getItems().stream().allMatch(candidate -> candidate.getFulfillmentStatus() == FulfillmentStatus.DELIVERED)) {
+			order.setStatus(OrderStatus.FULFILLED);
+		}
+		return customerOrderRepository.save(order);
 	}
 
 	@Override

@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Locale;
 import java.math.BigDecimal;
@@ -37,6 +38,7 @@ public class DemoDataInitializer implements ApplicationRunner {
 		this(userRepository, null, null, passwordEncoder, properties);
 	}
 
+	@Autowired
 	public DemoDataInitializer(UserRepository userRepository, ProductRepository productRepository,
 			CustomerOrderRepository customerOrderRepository, PasswordEncoder passwordEncoder,
 			DemoProperties properties) {
@@ -113,7 +115,7 @@ public class DemoDataInitializer implements ApplicationRunner {
 	}
 
 	private static String canonicalizeRequired(String value, String fieldName) {
-		if (value == null || value.isBlank()) {
+		if (value == null || value.isBlank() || value.trim().startsWith("${")) {
 			throw new IllegalStateException(fieldName + " must be configured");
 		}
 		return value.trim().toLowerCase(Locale.ROOT);

@@ -17,8 +17,12 @@ import java.util.Optional;
 public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Long> {
 
 	boolean existsByCustomerId(Long customerId);
+	boolean existsByItemsProductId(Long productId);
 
 	Page<CustomerOrder> findByCustomerId(Long customerId, Pageable pageable);
+
+	@EntityGraph(attributePaths = {"items", "items.product", "items.vendor", "customer"})
+	Optional<CustomerOrder> findByIdWithItems(Long id);
 
 	@EntityGraph(attributePaths = {"items", "items.product"})
 	Optional<CustomerOrder> findByIdAndCustomerId(Long id, Long customerId);
@@ -45,13 +49,17 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
 	@Query("select o from CustomerOrder o")
 	Page<CustomerOrder> findAllWithItems(Pageable pageable);
 
+	@EntityGraph(attributePaths = {"items", "items.product", "items.vendor", "customer"})
+	@Query("select o from CustomerOrder o where o.id in :ids")
+	List<CustomerOrder> findAllWithItemsById(@Param("ids") List<Long> ids);
+
 	@Query("select count(distinct o) from CustomerOrder o join o.items i where i.vendor.id = :vendorId")
 	long countVendorOrders(@Param("vendorId") Long vendorId);
 
 	@Query("select count(distinct o) from CustomerOrder o join o.items i where i.vendor.id = :vendorId and o.status = :status")
 	long countVendorOrdersByStatus(@Param("vendorId") Long vendorId, @Param("status") OrderStatus status);
 
-	@Query("select coalesce(sum(i.quantity), 0) from CustomerOrder o join o.items i where i.vendor.id = :vendorId")
+	@Query("select coalesce(sum(i.quantity), 0) from CustomerOrder o join o.items i where i.vendor.id = :vendorId and o.status <> com.marketplace.enums.OrderStatus.CANCELLED")
 	long sumVendorUnits(@Param("vendorId") Long vendorId);
 
 	@Query("select coalesce(sum(i.lineTotal), 0) from CustomerOrder o join o.items i where i.vendor.id = :vendorId and o.status <> com.marketplace.enums.OrderStatus.CANCELLED")
@@ -63,7 +71,7 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
 	@Query("select count(o) from CustomerOrder o where o.status = :status")
 	long countAllOrdersByStatus(@Param("status") OrderStatus status);
 
-	@Query("select coalesce(sum(i.quantity), 0) from OrderItem i")
+	@Query("select coalesce(sum(i.quantity), 0) from OrderItem i where i.order.status <> com.marketplace.enums.OrderStatus.CANCELLED")
 	long sumAllUnits();
 
 	@Query("select coalesce(sum(o.totalAmount), 0) from CustomerOrder o where o.status <> com.marketplace.enums.OrderStatus.CANCELLED")
