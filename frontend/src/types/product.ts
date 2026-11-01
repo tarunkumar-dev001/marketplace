@@ -5,6 +5,7 @@ export interface Product {
   price: number | string
   stockQuantity: number
   category: string
+  imageUrl: string | null
   active: boolean
   createdAt: string
   updatedAt: string
@@ -24,6 +25,7 @@ export interface ProductRequest {
   price: number
   stockQuantity: number
   category: string
+  imageUrl?: string
   active: boolean
 }
 

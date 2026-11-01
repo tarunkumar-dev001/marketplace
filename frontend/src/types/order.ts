@@ -6,6 +6,7 @@ export interface OrderItem {
   unitPrice: number | string
   quantity: number
   lineTotal: number | string
+  fulfillmentStatus?: 'PLACED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
 }
 
 export interface Order {
@@ -15,6 +16,13 @@ export interface Order {
   totalAmount: number | string
   createdAt: string
   updatedAt: string
+  shippingName?: string | null
+  shippingPhone?: string | null
+  shippingAddress?: string | null
+  shippingCity?: string | null
+  shippingPincode?: string | null
+  paymentMethod?: 'COD' | 'DEMO_CARD'
+  paymentStatus?: 'PENDING' | 'PAID'
   items: OrderItem[]
 }
 

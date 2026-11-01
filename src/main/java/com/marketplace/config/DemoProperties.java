@@ -14,6 +14,8 @@ public class DemoProperties {
 	private String customerEmail;
 	private String customerPassword;
 	private boolean activateExistingUsers = false;
+	private int extraVendors = 2;
+	private int extraCustomers = 9;
 
 	public String getAdminEmail() {
 		return adminEmail;
@@ -70,4 +72,9 @@ public class DemoProperties {
 	public void setActivateExistingUsers(boolean activateExistingUsers) {
 		this.activateExistingUsers = activateExistingUsers;
 	}
+
+	public int getExtraVendors() { return extraVendors; }
+	public void setExtraVendors(int extraVendors) { this.extraVendors = extraVendors; }
+	public int getExtraCustomers() { return extraCustomers; }
+	public void setExtraCustomers(int extraCustomers) { this.extraCustomers = extraCustomers; }
 }

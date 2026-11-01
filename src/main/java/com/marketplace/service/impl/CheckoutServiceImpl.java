@@ -15,6 +15,7 @@ import com.marketplace.repository.CustomerOrderRepository;
 import com.marketplace.repository.ProductRepository;
 import com.marketplace.repository.UserRepository;
 import com.marketplace.service.CheckoutService;
+import com.marketplace.dto.CheckoutRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,12 @@ public class CheckoutServiceImpl implements CheckoutService {
 	@Override
 	@Transactional
 	public CustomerOrder checkout(Long actorUserId, Role actorRole) {
+		return checkout(actorUserId, actorRole, new CheckoutRequest("", "", "", "", "", com.marketplace.enums.PaymentMethod.COD));
+	}
+
+	@Override
+	@Transactional
+	public CustomerOrder checkout(Long actorUserId, Role actorRole, CheckoutRequest request) {
 		User customer = findActiveCustomer(actorUserId, actorRole);
 		Cart cart = cartRepository.findByCustomerIdForUpdate(customer.getId()).orElseThrow(CartEmptyException::new);
 		List<CartItem> cartItems = cart.getItems().stream()
@@ -60,6 +67,7 @@ public class CheckoutServiceImpl implements CheckoutService {
 				.reduce(BigDecimal.ZERO, BigDecimal::add);
 
 		CustomerOrder order = new CustomerOrder(customer, OrderStatus.PLACED, ORDER_CURRENCY, totalAmount);
+		order.setShippingAndPayment(request.name(), request.phone(), request.address(), request.city(), request.pincode(), request.paymentMethod());
 		for (CheckoutLine line : lines) {
 			line.product().decrementStock(line.quantity());
 			order.addItem(line.product(), line.product().getVendor(), line.product().getName(), line.product().getPrice(),

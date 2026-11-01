@@ -2,6 +2,8 @@ package com.marketplace.entity;
 
 import com.marketplace.enums.OrderStatus;
 import com.marketplace.enums.FulfillmentStatus;
+import com.marketplace.enums.PaymentMethod;
+import com.marketplace.enums.PaymentStatus;
 import com.marketplace.exception.OrderCancellationNotAllowedException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -50,6 +52,38 @@ public class CustomerOrder {
 
 	@Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
 	private BigDecimal totalAmount;
+
+	@Column(name = "shipping_name", length = 120)
+	private String shippingName;
+	@Column(name = "shipping_phone", length = 20)
+	private String shippingPhone;
+	@Column(name = "shipping_address", length = 300)
+	private String shippingAddress;
+	@Column(name = "shipping_city", length = 80)
+	private String shippingCity;
+	@Column(name = "shipping_pincode", length = 10)
+	private String shippingPincode;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "payment_method", nullable = false, length = 20)
+	private PaymentMethod paymentMethod = PaymentMethod.COD;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "payment_status", nullable = false, length = 20)
+	private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+	public void setShippingAndPayment(String name, String phone, String address, String city, String pincode,
+			PaymentMethod method) {
+		this.shippingName = name; this.shippingPhone = phone; this.shippingAddress = address;
+		this.shippingCity = city; this.shippingPincode = pincode; this.paymentMethod = method;
+		this.paymentStatus = method == PaymentMethod.DEMO_CARD ? PaymentStatus.PAID : PaymentStatus.PENDING;
+	}
+
+	public String getShippingName() { return shippingName; }
+	public String getShippingPhone() { return shippingPhone; }
+	public String getShippingAddress() { return shippingAddress; }
+	public String getShippingCity() { return shippingCity; }
+	public String getShippingPincode() { return shippingPincode; }
+	public PaymentMethod getPaymentMethod() { return paymentMethod; }
+	public PaymentStatus getPaymentStatus() { return paymentStatus; }
 
 	@Version
 	@Column(name = "version", nullable = false)

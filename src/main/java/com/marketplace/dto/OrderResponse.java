@@ -2,6 +2,8 @@ package com.marketplace.dto;
 
 import com.marketplace.entity.CustomerOrder;
 import com.marketplace.enums.OrderStatus;
+import com.marketplace.enums.PaymentMethod;
+import com.marketplace.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -15,6 +17,8 @@ public record OrderResponse(
 		BigDecimal totalAmount,
 		Instant createdAt,
 		Instant updatedAt,
+		String shippingName, String shippingPhone, String shippingAddress, String shippingCity, String shippingPincode,
+		PaymentMethod paymentMethod, PaymentStatus paymentStatus,
 		List<OrderItemResponse> items
 ) {
 
@@ -27,6 +31,8 @@ public record OrderResponse(
 				order.getTotalAmount(),
 				order.getCreatedAt(),
 				order.getUpdatedAt(),
+				order.getShippingName(), order.getShippingPhone(), order.getShippingAddress(),
+				order.getShippingCity(), order.getShippingPincode(), order.getPaymentMethod(), order.getPaymentStatus(),
 				order.getItems().stream().map(OrderItemResponse::from).toList()
 		);
 	}
@@ -46,6 +52,8 @@ public record OrderResponse(
 				vendorSubtotal,
 				order.getCreatedAt(),
 				order.getUpdatedAt(),
+				order.getShippingName(), order.getShippingPhone(), order.getShippingAddress(),
+				order.getShippingCity(), order.getShippingPincode(), order.getPaymentMethod(), order.getPaymentStatus(),
 				vendorItems.stream()
 						.map(OrderItemResponse::from)
 						.toList()
@@ -56,11 +64,13 @@ public record OrderResponse(
 		return new OrderResponse(
 				order.getId(),
 				order.getStatus(),
-				order.getCustomer().getEmail(),
+				order.getCustomer() == null ? null : order.getCustomer().getEmail(),
 				order.getCurrency(),
 				order.getTotalAmount(),
 				order.getCreatedAt(),
 				order.getUpdatedAt(),
+				order.getShippingName(), order.getShippingPhone(), order.getShippingAddress(),
+				order.getShippingCity(), order.getShippingPincode(), order.getPaymentMethod(), order.getPaymentStatus(),
 				order.getItems().stream().map(OrderItemResponse::from).toList()
 		);
 	}

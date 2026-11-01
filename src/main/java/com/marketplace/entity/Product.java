@@ -40,6 +40,9 @@ public class Product {
 	@Column(name = "category", nullable = false, length = 100)
 	private String category;
 
+	@Column(name = "image_url", length = 500)
+	private String imageUrl;
+
 	@Column(name = "active", nullable = false)
 	private boolean active = true;
 
@@ -74,6 +77,14 @@ public class Product {
 
 	public void assignVendor(User vendor) {
 		this.vendor = vendor;
+	}
+
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
 	}
 
 	public void update(String name, String description, BigDecimal price, Integer stockQuantity, String category,

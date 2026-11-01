@@ -13,6 +13,7 @@ public record AdminProductResponse(
 		BigDecimal price,
 		Integer stockQuantity,
 		String category,
+		String imageUrl,
 		boolean active,
 		Long vendorId,
 		String vendorEmail,
@@ -23,7 +24,7 @@ public record AdminProductResponse(
 	public static AdminProductResponse from(Product product) {
 		User vendor = product.getVendor();
 		return new AdminProductResponse(product.getId(), product.getName(), product.getDescription(), product.getPrice(),
-				product.getStockQuantity(), product.getCategory(), product.isActive(),
+				product.getStockQuantity(), 				product.getCategory(), product.getImageUrl(), product.isActive(),
 				vendor == null ? null : vendor.getId(), vendor == null ? null : vendor.getEmail(), product.getCreatedAt(),
 				product.getUpdatedAt());
 	}

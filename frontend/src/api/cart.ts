@@ -27,8 +27,8 @@ export async function removeCartItem(itemId: number): Promise<void> {
   await apiClient.delete(`/api/cart/items/${itemId}`)
 }
 
-export async function checkoutCart(): Promise<CheckoutOrder> {
-  const response = await apiClient.post<ApiResponse<CheckoutOrder>>('/api/cart/checkout')
+export async function checkoutCart(details: { name: string; phone: string; address: string; city: string; pincode: string; paymentMethod: 'COD' | 'DEMO_CARD' }): Promise<CheckoutOrder> {
+  const response = await apiClient.post<ApiResponse<CheckoutOrder>>('/api/cart/checkout', details)
   return requireData(response.data, 'We could not complete checkout. Please try again.')
 }
 

@@ -104,7 +104,7 @@ public class ProductController {
 	}
 
 	private Product toProduct(ProductRequest request, boolean defaultActive) {
-		return new Product(
+		Product product = new Product(
 				request.name(),
 				request.description(),
 				request.price(),
@@ -112,6 +112,8 @@ public class ProductController {
 				request.category(),
 				request.active() == null ? defaultActive : request.active()
 		);
+		product.setImageUrl(request.imageUrl());
+		return product;
 	}
 
 	private Sort sortFor(String sortBy, String direction) {

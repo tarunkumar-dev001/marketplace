@@ -12,6 +12,7 @@ public record ProductResponse(
 		BigDecimal price,
 		Integer stockQuantity,
 		String category,
+		String imageUrl,
 		boolean active,
 		Instant createdAt,
 		Instant updatedAt
@@ -25,6 +26,7 @@ public record ProductResponse(
 				product.getPrice(),
 				product.getStockQuantity(),
 				product.getCategory(),
+				product.getImageUrl(),
 				product.isActive(),
 				product.getCreatedAt(),
 				product.getUpdatedAt()

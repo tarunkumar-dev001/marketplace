@@ -99,6 +99,7 @@ public class ProductServiceImpl implements ProductService {
 				product.getCategory(),
 				product.isActive()
 		);
+		existingProduct.setImageUrl(product.getImageUrl());
 		return productRepository.save(existingProduct);
 	}
 

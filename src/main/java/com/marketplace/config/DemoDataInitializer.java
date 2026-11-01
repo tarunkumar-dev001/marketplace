@@ -56,6 +56,16 @@ public class DemoDataInitializer implements ApplicationRunner {
 		created += ensureUser(properties.getAdminEmail(), properties.getAdminPassword(), Role.ADMIN) ? 1 : 0;
 		created += ensureUser(properties.getVendorEmail(), properties.getVendorPassword(), Role.VENDOR) ? 1 : 0;
 		created += ensureUser(properties.getCustomerEmail(), properties.getCustomerPassword(), Role.CUSTOMER) ? 1 : 0;
+		if (productRepository != null) {
+			for (int i = 2; i < properties.getExtraVendors() + 2; i++) {
+				created += ensureUser(DemoCatalog.deriveEmail(properties.getVendorEmail(), i),
+						properties.getVendorPassword(), Role.VENDOR) ? 1 : 0;
+			}
+			for (int i = 3; i < properties.getExtraCustomers() + 3; i++) {
+				created += ensureUser(DemoCatalog.deriveEmail(properties.getCustomerEmail(), i),
+						properties.getCustomerPassword(), Role.CUSTOMER) ? 1 : 0;
+			}
+		}
 		ensureDemoCatalogAndOrder();
 		LOGGER.info("Demo user initialization complete: {} created, {} existing preserved", created, 3 - created);
 	}
@@ -66,6 +76,13 @@ public class DemoDataInitializer implements ApplicationRunner {
 		}
 		User vendor = userRepository.findByEmail(canonicalizeRequired(properties.getVendorEmail(), "Demo email"))
 				.orElseThrow(() -> new IllegalStateException("Demo vendor was not initialized"));
+		java.util.List<User> vendors = new java.util.ArrayList<>();
+		vendors.add(vendor);
+		for (int i = 2; i < properties.getExtraVendors() + 2 && vendors.size() < 3; i++) {
+			userRepository.findByEmail(DemoCatalog.deriveEmail(properties.getVendorEmail(), i).toLowerCase(Locale.ROOT))
+					.ifPresent(vendors::add);
+		}
+		DemoCatalog.seedProducts(vendors, productRepository);
 		User customer = userRepository.findByEmail(canonicalizeRequired(properties.getCustomerEmail(), "Demo email"))
 				.orElseThrow(() -> new IllegalStateException("Demo customer was not initialized"));
 

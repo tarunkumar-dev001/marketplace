@@ -6,6 +6,7 @@ import com.marketplace.dto.CartItemQuantityRequest;
 import com.marketplace.dto.CartItemResponse;
 import com.marketplace.dto.CartResponse;
 import com.marketplace.dto.CheckoutResponse;
+import com.marketplace.dto.CheckoutRequest;
 import com.marketplace.enums.Role;
 import com.marketplace.service.CartService;
 import com.marketplace.service.CheckoutService;
@@ -68,10 +69,13 @@ public class CartController {
 	}
 
 	@PostMapping("/checkout")
-	public ResponseEntity<ApiResponse<CheckoutResponse>> checkout(Principal principal) {
+	public ResponseEntity<ApiResponse<CheckoutResponse>> checkout(@RequestBody(required=false) CheckoutRequest request,
+			Principal principal) {
 		Jwt jwt = authenticatedJwt(principal);
 		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Checkout completed",
-				CheckoutResponse.from(checkoutService.checkout(actorUserId(jwt), actorRole(jwt)))));
+				CheckoutResponse.from(request == null
+						? checkoutService.checkout(actorUserId(jwt), actorRole(jwt))
+						: checkoutService.checkout(actorUserId(jwt), actorRole(jwt), request))));
 	}
 
 	private Jwt authenticatedJwt(Principal principal) {
