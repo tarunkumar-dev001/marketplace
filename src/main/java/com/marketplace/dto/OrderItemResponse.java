@@ -6,6 +6,7 @@ import com.marketplace.enums.FulfillmentStatus;
 import java.math.BigDecimal;
 
 public record OrderItemResponse(
+		Long itemId,
 		Long productId,
 		String productName,
 		BigDecimal unitPrice,
@@ -16,6 +17,7 @@ public record OrderItemResponse(
 
 	public static OrderItemResponse from(OrderItem item) {
 		return new OrderItemResponse(
+				item.getId(),
 				item.getProduct().getId(),
 				item.getProductName(),
 				item.getUnitPrice(),

@@ -2,10 +2,14 @@ import { isAxiosError } from 'axios'
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { createProduct, deleteProduct, getMyProducts, updateProduct } from '../api/products'
-import { getOrderStatuses, getVendorOrders, getVendorOrderStatistics, orderErrorMessage } from '../api/orders'
+import { getOrderStatuses, getVendorOrders, getVendorOrderStatistics, orderErrorMessage, updateVendorItemStatus } from '../api/orders'
 import { usePageTitle } from '../hooks/usePageTitle'
 import type { Product, ProductPage, ProductRequest } from '../types/product'
 import type { Order, OrderPage, OrderStatuses, OrderStatusOption, VendorOrderStatistics } from '../types/order'
+import { ProductImage } from '../components/ProductImage'
+import { useToast } from '../context/ToastContext'
+
+const CATEGORIES = ['Electronics', 'Fashion', 'Home & Kitchen', 'Books', 'Sports', 'Beauty']
 
 const PAGE_SIZE = 20
 
@@ -20,6 +24,7 @@ function productErrorMessage(error: unknown, fallback = 'We could not complete t
 
 export function VendorDashboardPage() {
   usePageTitle('Vendor dashboard')
+  const showToast = useToast()
   const [products, setProducts] = useState<ProductPage | null>(null)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -90,9 +95,11 @@ export function VendorDashboardPage() {
       if (editingProduct) {
         await updateProduct(editingProduct.id, request)
         setNotice('Product updated successfully.')
+        showToast('Product updated successfully.')
       } else {
         await createProduct(request)
         setNotice('Product created successfully.')
+        showToast('Product created successfully.')
       }
       setEditingProduct(undefined)
       if (page === 0) await loadProducts()
@@ -112,6 +119,7 @@ export function VendorDashboardPage() {
     try {
       await deleteProduct(product.id)
       setNotice('Product deleted successfully.')
+      showToast('Product deleted successfully.')
       await loadProducts()
     } catch (requestError) {
       setActionError(productErrorMessage(requestError, 'We could not delete this product. Please try again.'))
@@ -141,7 +149,7 @@ export function VendorDashboardPage() {
       </section>
       {loadingOrders ? <DashboardSkeleton /> : orderError && !statistics ? <section role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-950"><p>{orderError}</p><button type="button" onClick={() => { void loadOrders(); void loadStatistics() }} className="mt-3 text-sm font-semibold underline">Try again</button></section> : orders && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5"><h2 className="text-xl font-semibold">Orders</h2><span className="text-sm text-slate-500">{orders.totalElements} total</span></div>
-        {orders.items.length === 0 ? <p className="p-6 text-sm text-slate-600">No orders contain your items yet.</p> : <div className="divide-y divide-slate-100">{orders.items.map((order) => <VendorOrder key={order.orderId} order={order} statuses={statuses?.statuses ?? []} />)}</div>}
+        {orders.items.length === 0 ? <p className="p-6 text-sm text-slate-600">No orders contain your items yet.</p> : <div className="divide-y divide-slate-100">{orders.items.map((order) => <VendorOrder key={order.orderId} order={order} statuses={statuses?.statuses ?? []} onUpdated={async () => { await loadOrders(); await loadStatistics() }} />)}</div>}
         {orders.totalPages > 1 && <nav aria-label="Vendor order pagination" className="flex items-center justify-between border-t border-slate-100 px-6 py-4"><button type="button" disabled={orders.page === 0} onClick={() => setOrderPage((current) => current - 1)} className="text-sm font-semibold text-brand disabled:opacity-50">Previous</button><span className="text-sm text-slate-600">Page {orders.page + 1} of {orders.totalPages}</span><button type="button" disabled={orders.page >= orders.totalPages - 1} onClick={() => setOrderPage((current) => current + 1)} className="text-sm font-semibold text-brand disabled:opacity-50">Next</button></nav>}
       </section>}
       {editingProduct !== undefined && <ProductForm product={editingProduct} saving={saving} onCancel={() => setEditingProduct(undefined)} onSubmit={saveProduct} />}
@@ -161,6 +169,7 @@ function ProductForm({ product, saving, onCancel, onSubmit }: { product: Product
   const [price, setPrice] = useState(String(product?.price ?? ''))
   const [stockQuantity, setStockQuantity] = useState(String(product?.stockQuantity ?? '0'))
   const [category, setCategory] = useState(product?.category ?? '')
+  const [imageUrl, setImageUrl] = useState(product?.imageUrl ?? '')
   const [active, setActive] = useState(product?.active ?? true)
   const [validationError, setValidationError] = useState<string | null>(null)
 
@@ -173,19 +182,23 @@ function ProductForm({ product, saving, onCancel, onSubmit }: { product: Product
       return
     }
     setValidationError(null)
-    await onSubmit({ name: name.trim(), description: description.trim() || undefined, price: parsedPrice, stockQuantity: parsedStock, category: category.trim(), active })
+    await onSubmit({ name: name.trim(), description: description.trim() || undefined, price: parsedPrice, stockQuantity: parsedStock, category: category.trim(), imageUrl: imageUrl.trim() || undefined, active })
   }
 
-  return <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-center justify-between gap-4"><div><h2 className="text-xl font-semibold">{product ? 'Edit product' : 'Add product'}</h2><p className="mt-1 text-sm text-slate-600">Provide the catalog details shown to customers.</p></div><button type="button" onClick={onCancel} disabled={saving} className="text-sm font-semibold text-brand hover:underline">Cancel</button></div>{validationError && <p role="alert" className="mt-5 rounded-lg bg-rose-50 p-3 text-sm text-rose-900">{validationError}</p>}<form onSubmit={(event) => void submit(event)} className="mt-6 grid gap-5 md:grid-cols-2"><label className="grid gap-2 text-sm font-semibold text-slate-700">Name<input required maxLength={150} value={name} onChange={(event) => setName(event.target.value)} className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="grid gap-2 text-sm font-semibold text-slate-700">Category<input required maxLength={100} value={category} onChange={(event) => setCategory(event.target.value)} className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="grid gap-2 text-sm font-semibold text-slate-700">Price<input required min="0.01" step="0.01" type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="grid gap-2 text-sm font-semibold text-slate-700">Stock quantity<input required min="0" step="1" type="number" value={stockQuantity} onChange={(event) => setStockQuantity(event.target.value)} className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="grid gap-2 text-sm font-semibold text-slate-700 md:col-span-2">Description<textarea maxLength={5000} rows={4} value={description} onChange={(event) => setDescription(event.target.value)} className="rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="flex items-center gap-3 text-sm font-semibold text-slate-700 md:col-span-2"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} className="size-4" />Active product</label><div className="md:col-span-2"><button type="submit" disabled={saving} className="rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white hover:bg-[#102f59] disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving product...' : product ? 'Save changes' : 'Create product'}</button></div></form></section>
+  return <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-center justify-between gap-4"><div><h2 className="text-xl font-semibold">{product ? 'Edit product' : 'Add product'}</h2><p className="mt-1 text-sm text-slate-600">Provide the catalog details shown to customers.</p></div><button type="button" onClick={onCancel} disabled={saving} className="text-sm font-semibold text-brand hover:underline">Cancel</button></div>{validationError && <p role="alert" className="mt-5 rounded-lg bg-rose-50 p-3 text-sm text-rose-900">{validationError}</p>}<form onSubmit={(event) => void submit(event)} className="mt-6 grid gap-5 md:grid-cols-2"><label className="grid gap-2 text-sm font-semibold text-slate-700">Name<input required maxLength={150} value={name} onChange={(event) => setName(event.target.value)} className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label>  <label className="grid gap-2 text-sm font-semibold text-slate-700">Category<select required value={category} onChange={(event) => setCategory(event.target.value)} className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100"><option value="">Select category</option>{CATEGORIES.map((name) => <option key={name} value={name}>{name}</option>)}</select></label><label className="grid gap-2 text-sm font-semibold text-slate-700">Image URL<input maxLength={500} type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://..." className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="grid gap-2 text-sm font-semibold text-slate-700">Price<input required min="0.01" step="0.01" type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="grid gap-2 text-sm font-semibold text-slate-700">Stock quantity<input required min="0" step="1" type="number" value={stockQuantity} onChange={(event) => setStockQuantity(event.target.value)} className="h-11 rounded-xl border border-slate-300 px-3 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="grid gap-2 text-sm font-semibold text-slate-700 md:col-span-2">Description<textarea maxLength={5000} rows={4} value={description} onChange={(event) => setDescription(event.target.value)} className="rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-brand focus:ring-3 focus:ring-sky-100" /></label><label className="flex items-center gap-3 text-sm font-semibold text-slate-700 md:col-span-2"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} className="size-4" />Active product</label><div className="md:col-span-2"><button type="submit" disabled={saving} className="rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white hover:bg-[#102f59] disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving product...' : product ? 'Save changes' : 'Create product'}</button></div></form></section>
 }
 
 function Statistic({ label, value }: { label: string; value: number | string }) {
   return <div className="rounded-xl bg-slate-50 px-4 py-5"><p className="text-sm text-slate-500">{label}</p><p className="mt-1 text-2xl font-semibold text-ink">{value}</p></div>
 }
 
-function VendorOrder({ order, statuses }: { order: Order; statuses: OrderStatusOption[] }) {
+function VendorOrder({ order, statuses, onUpdated }: { order: Order; statuses: OrderStatusOption[]; onUpdated: () => Promise<void> }) {
   const statusLabel = statuses.find((status) => status.value === order.status)?.label ?? order.status
-  return <article className="p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">Order #{order.orderId}</p><p className="mt-1 text-sm text-slate-500">{new Date(order.createdAt).toLocaleString()}</p></div><span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">{statusLabel}</span></div><div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200">{order.items.map((item, index) => <div key={`${item.productId}-${index}`} className="flex justify-between gap-4 px-4 py-3 text-sm"><span>{item.productName} × {item.quantity}</span><span className="font-semibold text-slate-700">{moneyLabel(item.lineTotal)}</span></div>)}</div></article>
+  async function transition(itemId: number, status: 'SHIPPED' | 'DELIVERED') {
+    await updateVendorItemStatus(order.orderId, itemId, status)
+    await onUpdated()
+  }
+  return <article className="p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">Order #{order.orderId}</p><p className="mt-1 text-sm text-slate-500">{new Date(order.createdAt).toLocaleString()}</p></div><span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">{statusLabel}</span></div>{(order.shippingName || order.shippingAddress) && <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600"><p className="font-semibold text-slate-800">{order.shippingName}</p>{order.shippingAddress}, {order.shippingCity} {order.shippingPincode}<p>{order.shippingPhone}</p></div>}<div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200">{order.items.map((item, index) => <div key={`${item.itemId ?? item.productId}-${index}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"><div><span>{item.productName} × {item.quantity}</span><span className="ml-2 rounded-full bg-slate-100 px-2 py-1 text-xs">{item.fulfillmentStatus ?? 'PLACED'}</span></div><div className="flex items-center gap-2"><span className="font-semibold text-slate-700">{moneyLabel(item.lineTotal)}</span>{item.itemId && item.fulfillmentStatus === 'PLACED' && <button type="button" onClick={() => void transition(item.itemId!, 'SHIPPED')} className="rounded-lg border px-2 py-1 text-xs font-semibold text-brand">Mark shipped</button>}{item.itemId && item.fulfillmentStatus === 'SHIPPED' && <button type="button" onClick={() => void transition(item.itemId!, 'DELIVERED')} className="rounded-lg border px-2 py-1 text-xs font-semibold text-brand">Mark delivered</button>}</div></div>)}</div></article>
 }
 
 function moneyLabel(value: number | string) {
@@ -193,7 +206,7 @@ function moneyLabel(value: number | string) {
 }
 
 function ProductCard({ product, deleting, onEdit, onDelete }: { product: Product; deleting: boolean; onEdit: () => void; onDelete: () => void }) {
-  return <article className="flex min-h-56 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-start justify-between gap-4"><span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-brand">{product.category}</span><span className={`rounded-full px-3 py-1 text-xs font-semibold ${product.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{product.active ? 'Active' : 'Inactive'}</span></div><h2 className="mt-5 text-xl font-semibold tracking-tight">{product.name}</h2><p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{product.description || 'No description provided.'}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-5"><span className="text-xl font-semibold">{priceLabel(product.price)}</span><span className="text-sm font-medium text-slate-600">{product.stockQuantity} in stock</span></div><div className="mt-5 flex gap-4 text-sm font-semibold"><button type="button" onClick={onEdit} className="text-brand hover:underline">Edit</button><button type="button" onClick={onDelete} disabled={deleting} className="text-rose-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60">{deleting ? 'Deleting...' : 'Delete'}</button></div></article>
+  return <article className="flex min-h-56 flex-col rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"><ProductImage imageUrl={product.imageUrl} category={product.category} name={product.name} className="h-44 w-full" /><div className="p-6"><div className="flex items-start justify-between gap-4"><span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-brand">{product.category}</span><span className={`rounded-full px-3 py-1 text-xs font-semibold ${product.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{product.active ? 'Active' : 'Inactive'}</span></div><h2 className="mt-5 text-xl font-semibold tracking-tight">{product.name}</h2><p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{product.description || 'No description provided.'}</p><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-5"><span className="text-xl font-semibold">{priceLabel(product.price)}</span><span className="text-sm font-medium text-slate-600">{product.stockQuantity} in stock</span></div><div className="mt-5 flex gap-4 text-sm font-semibold"><button type="button" onClick={onEdit} className="text-brand hover:underline">Edit</button><button type="button" onClick={onDelete} disabled={deleting} className="text-rose-700 hover:underline disabled:cursor-not-allowed disabled:opacity-60">{deleting ? 'Deleting...' : 'Delete'}</button></div></div></article>
 }
 
 function DashboardSkeleton() {

@@ -38,6 +38,11 @@ export async function cancelOrder(orderId: number): Promise<Order> {
   return requireData(response.data, 'Unable to cancel this order.')
 }
 
+export async function updateVendorItemStatus(orderId: number, itemId: number, status: 'SHIPPED' | 'DELIVERED'): Promise<Order> {
+  const response = await apiClient.patch<ApiResponse<Order>>(`/api/vendor/orders/${orderId}/items/${itemId}/status`, { status })
+  return requireData(response.data, 'Unable to update this item.')
+}
+
 export function orderErrorMessage(error: unknown, fallback: string): string {
   if (isAxiosError<ApiResponse<null>>(error)) return error.response?.data?.message ?? fallback
   return error instanceof Error ? error.message : fallback

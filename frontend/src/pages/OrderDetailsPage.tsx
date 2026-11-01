@@ -3,12 +3,14 @@ import { Link, useParams } from 'react-router-dom'
 import { cancelOrder, getOrder, orderErrorMessage } from '../api/orders'
 import { usePageTitle } from '../hooks/usePageTitle'
 import type { Order } from '../types/order'
+import { useToast } from '../context/ToastContext'
 
 function formatAmount(amount: number | string, currency: string) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(Number(amount))
 }
 
 export function OrderDetailsPage() {
+  const showToast = useToast()
   const { id } = useParams()
   usePageTitle(id ? `Order #${id}` : 'Order details')
   const [order, setOrder] = useState<Order | null>(null)
@@ -40,6 +42,7 @@ export function OrderDetailsPage() {
     try {
       await cancelOrder(order.orderId)
       await loadOrder()
+      showToast('Order cancelled.')
     } catch (requestError) {
       setError(orderErrorMessage(requestError, 'We could not cancel this order. Please try again.'))
     } finally {

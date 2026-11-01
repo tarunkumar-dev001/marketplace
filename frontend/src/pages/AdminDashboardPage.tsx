@@ -7,6 +7,7 @@ import type { AdminProduct, AdminProductPage, AdminUserPage } from '../types/adm
 import type { RegisteredUser } from '../types/auth'
 import type { AdminOrderStatistics } from '../types/order'
 import type { Order, OrderPage, OrderStatuses } from '../types/order'
+import { useToast } from '../context/ToastContext'
 
 const PAGE_SIZE = 20
 
@@ -17,6 +18,7 @@ function errorMessage(error: unknown, fallback: string) {
 
 export function AdminDashboardPage() {
   usePageTitle('Admin dashboard')
+  const showToast = useToast()
   const [users, setUsers] = useState<AdminUserPage | null>(null)
   const [products, setProducts] = useState<AdminProductPage | null>(null)
   const [userPage, setUserPage] = useState(0)
@@ -99,6 +101,7 @@ export function AdminDashboardPage() {
     try {
       await updateAdminUserStatus(user.id, active)
       await loadUsers()
+      showToast(active ? 'User activated.' : 'User deactivated.')
     } catch (requestError) {
       setUserError(errorMessage(requestError, 'We could not update this user. Please try again.'))
     } finally {
@@ -114,6 +117,7 @@ export function AdminDashboardPage() {
     try {
       await updateAdminProductStatus(product.id, active)
       await loadProducts()
+      showToast(active ? 'Product activated.' : 'Product deactivated.')
     } catch (requestError) {
       setProductError(errorMessage(requestError, 'We could not update this product. Please try again.'))
     } finally {
@@ -133,7 +137,7 @@ function AdminStatistic({ label, value }: { label: string; value: number | strin
 
 function AdminOrder({ order, statuses }: { order: Order; statuses: { value: string; label: string }[] }) {
   const statusLabel = statuses.find((status) => status.value === order.status)?.label ?? order.status
-  return <article className="p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">Order #{order.orderId}</p><p className="mt-1 text-sm text-slate-500">{new Date(order.createdAt).toLocaleString()}</p></div><span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">{statusLabel}</span></div><div className="mt-4 flex flex-wrap justify-between gap-4 text-sm"><span>{order.items.length} item{order.items.length === 1 ? '' : 's'}</span><span className="font-semibold text-slate-700">{adminMoneyLabel(order.totalAmount)}</span></div></article>
+  return <article className="p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">Order #{order.orderId}</p>{order.customerEmail && <p className="mt-1 text-sm font-medium text-slate-600">{order.customerEmail}</p>}<p className="mt-1 text-sm text-slate-500">{new Date(order.createdAt).toLocaleString()}</p></div><span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">{statusLabel}</span></div><div className="mt-4 flex flex-wrap justify-between gap-4 text-sm"><span>{order.items.length} item{order.items.length === 1 ? '' : 's'}</span><span className="font-semibold text-slate-700">{adminMoneyLabel(order.totalAmount)}</span></div></article>
 }
 
 function adminMoneyLabel(value: number | string) {

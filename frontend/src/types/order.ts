@@ -1,6 +1,7 @@
 export type OrderStatus = 'PLACED' | 'CANCELLED' | 'FULFILLED'
 
 export interface OrderItem {
+  itemId?: number
   productId: number
   productName: string
   unitPrice: number | string
@@ -16,6 +17,7 @@ export interface Order {
   totalAmount: number | string
   createdAt: string
   updatedAt: string
+  customerEmail?: string | null
   shippingName?: string | null
   shippingPhone?: string | null
   shippingAddress?: string | null

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { cartErrorMessage, checkoutCart, getCart } from '../api/cart'
 import { usePageTitle } from '../hooks/usePageTitle'
 import type { Cart, CheckoutOrder } from '../types/cart'
+import { useToast } from '../context/ToastContext'
 
 function formatAmount(amount: number | string, currency = 'INR') {
   const value = typeof amount === 'string' ? Number(amount) : amount
@@ -11,6 +12,7 @@ function formatAmount(amount: number | string, currency = 'INR') {
 
 export function CheckoutPage() {
   usePageTitle('Checkout')
+  const showToast = useToast()
   const [cart, setCart] = useState<Cart | null>(null)
   const [order, setOrder] = useState<CheckoutOrder | null>(null)
   const [loading, setLoading] = useState(true)
@@ -41,6 +43,7 @@ export function CheckoutPage() {
     try {
       const completedOrder = await checkoutCart(details)
       setOrder(completedOrder)
+      showToast('Order placed successfully.')
       setCart((currentCart) => currentCart ? { ...currentCart, items: [], subtotal: 0 } : currentCart)
     } catch (requestError) {
       setError(cartErrorMessage(requestError, 'We could not complete checkout. Please try again.'))

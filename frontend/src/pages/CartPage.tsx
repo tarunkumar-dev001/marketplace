@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { cartErrorMessage, getCart, removeCartItem, updateCartItem } from '../api/cart'
 import { usePageTitle } from '../hooks/usePageTitle'
 import type { Cart, CartItem } from '../types/cart'
+import { useToast } from '../context/ToastContext'
 
 function formatAmount(amount: number | string) {
   const value = typeof amount === 'string' ? Number(amount) : amount
@@ -10,6 +11,7 @@ function formatAmount(amount: number | string) {
 }
 
 export function CartPage() {
+  const showToast = useToast()
   usePageTitle('Your cart')
   const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,6 +44,7 @@ export function CartPage() {
       await updateCartItem(item.id, quantity)
       await loadCart()
       setNotice('Cart quantity updated.')
+      showToast('Cart quantity updated.')
     } catch (requestError) {
       setError(cartErrorMessage(requestError))
     } finally {
