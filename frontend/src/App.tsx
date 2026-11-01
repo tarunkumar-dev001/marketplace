@@ -14,6 +14,7 @@ import { OrderDetailsPage } from './pages/OrderDetailsPage'
 import { OrdersPage } from './pages/OrdersPage'
 import { VendorDashboardPage } from './pages/VendorDashboardPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="orders/:id" element={<RequireCustomer><OrderDetailsPage /></RequireCustomer>} />
         <Route path="vendor/dashboard" element={<RequireVendor><VendorDashboardPage /></RequireVendor>} />
         <Route path="admin/dashboard" element={<RequireAdmin><AdminDashboardPage /></RequireAdmin>} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   )

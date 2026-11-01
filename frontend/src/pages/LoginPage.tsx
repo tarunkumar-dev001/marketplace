@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { authErrorMessage, login } from '../api/auth'
 import { useAuth } from '../auth/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { demoAccounts } from '../demoAccounts'
 
 interface LoginLocationState {
   registered?: boolean
@@ -65,8 +66,8 @@ export function LoginPage() {
         <p className="mt-5 max-w-sm leading-7 text-slate-300">Access your customer cart, checkout, and order history from one secure storefront.</p>
       </div>
       <div className="px-6 py-10 sm:px-10 sm:py-12">
-        <p className="text-sm font-semibold text-brand">Customer sign-in</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Welcome back</h1>
+        <p className="text-sm font-semibold text-brand">Account access</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Sign in</h1>
         <p className="mt-3 leading-7 text-slate-600">Sign in to manage your purchases and orders.</p>
         {state?.registered && <div role="status" className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">Your customer account is ready. Sign in to continue.</div>}
         {error && <div role="alert" className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-900">{error}</div>}
@@ -75,6 +76,11 @@ export function LoginPage() {
           <label className="grid gap-2 text-sm font-semibold text-slate-700">Password<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required disabled={submitting} className="h-11 rounded-xl border border-slate-300 px-3 text-base font-normal outline-none transition focus:border-brand focus:ring-3 focus:ring-sky-100 disabled:bg-slate-50" /></label>
           <button type="submit" disabled={submitting} className="flex h-11 w-full items-center justify-center rounded-xl bg-brand px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#102f59] disabled:cursor-not-allowed disabled:opacity-60">{submitting ? 'Signing in...' : 'Sign in'}</button>
         </form>
+        {(demoAccounts.admin.email || demoAccounts.vendor.email || demoAccounts.customer.email) && <div className="mt-7 rounded-xl bg-slate-50 p-4"><p className="text-sm font-semibold">Try a demo account</p><div className="mt-3 flex flex-wrap gap-2">{([
+          ['Admin', demoAccounts.admin],
+          ['Vendor', demoAccounts.vendor],
+          ['Customer', demoAccounts.customer],
+        ] as const).map(([label, account]) => account.email && account.password ? <button key={label} type="button" onClick={() => { setEmail(account.email!); setPassword(account.password!); }} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-brand hover:bg-slate-100">{label}</button> : null)}</div></div>}
         <p className="mt-7 text-sm text-slate-600">New to Marketline? <Link className="font-semibold text-brand hover:underline" to="/register">Create a customer account</Link></p>
       </div>
     </section>

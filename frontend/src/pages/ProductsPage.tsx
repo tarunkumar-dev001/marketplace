@@ -1,9 +1,10 @@
 import { isAxiosError } from 'axios'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { getProducts } from '../api/products'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { ProductImage } from '../components/ProductImage'
 import type { Product, ProductPage, ProductQuery } from '../types/product'
 
 const PAGE_SIZE = 12
@@ -22,11 +23,13 @@ function productErrorMessage(error: unknown) {
 
 export function ProductsPage() {
   usePageTitle('Products')
+  const [searchParams] = useSearchParams()
+  const initialCategory = searchParams.get('category') ?? ''
 
   const [products, setProducts] = useState<ProductPage | null>(null)
   const [searchInput, setSearchInput] = useState('')
-  const [categoryInput, setCategoryInput] = useState('')
-  const [query, setQuery] = useState<ProductQuery>({ page: 0, size: PAGE_SIZE, sortBy: 'createdAt', direction: 'desc' })
+  const [categoryInput, setCategoryInput] = useState(initialCategory)
+  const [query, setQuery] = useState<ProductQuery>({ page: 0, size: PAGE_SIZE, category: initialCategory || undefined, sortBy: 'createdAt', direction: 'desc' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -149,6 +152,7 @@ function ProductCard({ product }: { product: Product }) {
 
   return (
     <article className="group flex min-h-72 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+      <ProductImage imageUrl={product.imageUrl} category={product.category} name={product.name} className="mb-5 h-40 w-full rounded-xl object-cover" />
       <div className="flex items-start justify-between gap-4">
         <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-brand">{product.category}</span>
         <span className={`text-xs font-semibold ${product.stockQuantity > 0 ? 'text-emerald-700' : 'text-slate-500'}`}>{availability}</span>

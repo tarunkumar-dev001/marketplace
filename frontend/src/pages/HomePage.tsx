@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useEffect, useState } from 'react'
+import { getProducts } from '../api/products'
+import type { Product } from '../types/product'
+import { ProductImage } from '../components/ProductImage'
 
 const highlights = [
   ['Curated marketplace', 'Discover active products from trusted sellers.'],
@@ -9,6 +13,9 @@ const highlights = [
 
 export function HomePage() {
   usePageTitle('Marketplace')
+  const [featured, setFeatured] = useState<Product[]>([])
+  useEffect(() => { void getProducts({ page: 0, size: 8, sortBy: 'createdAt', direction: 'desc' }).then((page) => setFeatured(page.items)).catch(() => undefined) }, [])
+  const categories = ['Electronics', 'Fashion', 'Home & Kitchen', 'Books', 'Sports', 'Beauty']
 
   return (
     <div className="space-y-12">
@@ -34,6 +41,8 @@ export function HomePage() {
           </div>
         </div>
       </section>
+      <section><h2 className="text-3xl font-semibold">Featured products</h2><div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{featured.map((product) => <Link key={product.id} to={`/products/${product.id}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><ProductImage imageUrl={product.imageUrl} category={product.category} name={product.name} className="h-36 w-full rounded-xl object-cover" /><p className="mt-4 font-semibold">{product.name}</p><p className="mt-1 text-sm text-brand">{product.category}</p></Link>)}</div></section>
+      <section><h2 className="text-2xl font-semibold">Shop by category</h2><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{categories.map((category) => <Link key={category} to={`/products?category=${encodeURIComponent(category)}`} className="rounded-2xl bg-gradient-to-br from-sky-100 to-indigo-100 p-6 text-lg font-semibold text-brand">{category}</Link>)}</div></section>
       <section>
         <div className="mb-7 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-sm font-semibold text-brand">Built around the customer</p><h2 className="mt-2 text-3xl font-semibold tracking-tight">A dependable purchasing flow</h2></div>

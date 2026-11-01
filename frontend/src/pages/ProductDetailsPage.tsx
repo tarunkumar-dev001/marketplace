@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { getProduct } from '../api/products'
 import { usePageTitle } from '../hooks/usePageTitle'
 import type { Product } from '../types/product'
+import { ProductImage } from '../components/ProductImage'
 
 function formatPrice(price: Product['price']) {
   const value = typeof price === 'string' ? Number(price) : price
@@ -122,13 +123,7 @@ export function ProductDetailsPage() {
       <Link to="/products" className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline">&larr; Back to products</Link>
       <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-200/50">
         <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="min-h-72 bg-[radial-gradient(circle_at_70%_20%,#7dd3fc,transparent_22rem),linear-gradient(135deg,#17375e,#11233f)] p-7 text-white sm:p-10">
-            <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-semibold text-sky-100">{product.category}</span>
-            <div className="mt-16 max-w-sm">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-sky-200">Marketplace selection</p>
-              <p className="mt-3 text-3xl font-semibold leading-tight">Carefully listed by a marketplace seller.</p>
-            </div>
-          </div>
+          <ProductImage imageUrl={product.imageUrl} category={product.category} name={product.name} className="min-h-72 h-full w-full object-cover" />
           <div className="p-7 sm:p-10">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
