@@ -7,7 +7,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,5 +86,35 @@ class UserServiceImplTests {
 
 		verify(userRepository, never()).save(any(User.class));
 		verifyNoInteractions(userRepository, passwordEncoder);
+	}
+
+	@Test
+	void activeAdminCanListUsersAndUpdateUserStatus() {
+		User admin = activeUser(1L, Role.ADMIN);
+		User customer = new User("customer@example.com", "hash", Role.CUSTOMER, true);
+		Page<User> users = new PageImpl<>(List.of(customer), PageRequest.of(0, 20), 1);
+		when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+		when(userRepository.findAll(PageRequest.of(0, 20))).thenReturn(users);
+		when(userRepository.findById(2L)).thenReturn(Optional.of(customer));
+		when(userRepository.save(customer)).thenReturn(customer);
+
+		assertSame(users, userService.getAllForAdmin(PageRequest.of(0, 20), 1L, Role.ADMIN));
+		assertSame(customer, userService.updateStatus(2L, false, 1L, Role.ADMIN));
+		assertEquals(false, customer.isActive());
+	}
+
+	@Test
+	void nonAdminsCannotUseAdminUserOperations() {
+		assertThrows(AccessDeniedException.class, () -> userService.getAllForAdmin(PageRequest.of(0, 20), 1L, Role.VENDOR));
+		assertThrows(AccessDeniedException.class, () -> userService.updateStatus(2L, true, 1L, Role.CUSTOMER));
+		verifyNoInteractions(userRepository, passwordEncoder);
+	}
+
+	private User activeUser(long id, Role role) {
+		User user = mock(User.class);
+		when(user.getId()).thenReturn(id);
+		when(user.getRole()).thenReturn(role);
+		when(user.isActive()).thenReturn(true);
+		return user;
 	}
 }

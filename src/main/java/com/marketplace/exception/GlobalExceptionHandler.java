@@ -27,6 +27,37 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.<Void>error("Product not found"));
 	}
 
+	@ExceptionHandler(UserNotFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleUserNotFoundException(UserNotFoundException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.<Void>error("User not found"));
+	}
+
+	@ExceptionHandler(CartItemNotFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleCartItemNotFoundException(CartItemNotFoundException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.<Void>error("Cart item not found"));
+	}
+
+	@ExceptionHandler(CartEmptyException.class)
+	public ResponseEntity<ApiResponse<Void>> handleCartEmptyException(CartEmptyException exception) {
+		return ResponseEntity.badRequest().body(ApiResponse.<Void>error("Cart is empty"));
+	}
+
+	@ExceptionHandler(InsufficientStockException.class)
+	public ResponseEntity<ApiResponse<Void>> handleInsufficientStockException(InsufficientStockException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.<Void>error("Insufficient stock"));
+	}
+
+	@ExceptionHandler(OrderNotFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleOrderNotFoundException(OrderNotFoundException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.<Void>error("Order not found"));
+	}
+
+	@ExceptionHandler(OrderCancellationNotAllowedException.class)
+	public ResponseEntity<ApiResponse<Void>> handleOrderCancellationNotAllowedException(
+			OrderCancellationNotAllowedException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.<Void>error("Order cannot be cancelled"));
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(
 			MethodArgumentNotValidException exception) {

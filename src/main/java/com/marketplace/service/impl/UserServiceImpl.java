@@ -2,9 +2,14 @@ package com.marketplace.service.impl;
 
 import com.marketplace.entity.User;
 import com.marketplace.enums.Role;
+import com.marketplace.exception.UserNotFoundException;
 import com.marketplace.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 
@@ -30,6 +35,30 @@ public class UserServiceImpl {
 		String passwordHash = passwordEncoder.encode(rawPassword);
 		User user = new User(normalizedEmail, passwordHash, Role.CUSTOMER, true);
 		return userRepository.save(user);
+	}
+
+	public Page<User> getAllForAdmin(Pageable pageable, Long actorUserId, Role actorRole) {
+		findActiveAdmin(actorUserId, actorRole);
+		return userRepository.findAll(pageable);
+	}
+
+	@Transactional
+	public User updateStatus(Long id, boolean active, Long actorUserId, Role actorRole) {
+		findActiveAdmin(actorUserId, actorRole);
+		User user = userRepository.findById(id).orElseThrow(UserNotFoundException::new);
+		user.setActive(active);
+		return userRepository.save(user);
+	}
+
+	private User findActiveAdmin(Long actorUserId, Role actorRole) {
+		if (actorUserId == null || actorUserId <= 0 || actorRole != Role.ADMIN) {
+			throw new AccessDeniedException("Access denied");
+		}
+		User user = userRepository.findById(actorUserId).orElseThrow(() -> new AccessDeniedException("Access denied"));
+		if (user.getId() == null || !actorUserId.equals(user.getId()) || !user.isActive() || user.getRole() != Role.ADMIN) {
+			throw new AccessDeniedException("Access denied");
+		}
+		return user;
 	}
 
 	private static String canonicalizeEmail(String email) {

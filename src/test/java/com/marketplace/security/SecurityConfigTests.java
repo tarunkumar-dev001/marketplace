@@ -36,6 +36,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -84,6 +86,30 @@ class SecurityConfigTests {
 	}
 
 	@Test
+	void viteDevelopmentOriginIsAllowedForApiRequestsAndPreflight() throws Exception {
+		mockMvc.perform(get("/api/products").header("Origin", "http://localhost:5173"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+
+		mockMvc.perform(options("/api/cart/items")
+					.header("Origin", "http://localhost:5173")
+					.header("Access-Control-Request-Method", "POST")
+					.header("Access-Control-Request-Headers", "Authorization, Content-Type"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+				.andExpect(header().doesNotExist("Access-Control-Allow-Credentials"));
+	}
+
+	@Test
+	void unapprovedCorsOriginIsRejected() throws Exception {
+		mockMvc.perform(options("/api/cart/items")
+					.header("Origin", "http://localhost:4173")
+					.header("Access-Control-Request-Method", "POST"))
+				.andExpect(status().isForbidden())
+				.andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+	}
+
+	@Test
 	void protectedRoutesRequireAuthenticationWithSafeUnauthorizedResponse() throws Exception {
 		mockMvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isUnauthorized())
@@ -93,6 +119,30 @@ class SecurityConfigTests {
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.message").value("Authentication required"));
 		mockMvc.perform(delete("/api/products/{id}", 1L))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Authentication required"));
+		mockMvc.perform(get("/api/cart"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Authentication required"));
+		mockMvc.perform(post("/api/cart/items"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Authentication required"));
+		mockMvc.perform(put("/api/cart/items/{itemId}", 1L))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Authentication required"));
+		mockMvc.perform(delete("/api/cart/items/{itemId}", 1L))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Authentication required"));
+		mockMvc.perform(post("/api/cart/checkout"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Authentication required"));
+		mockMvc.perform(get("/api/orders"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Authentication required"));
+		mockMvc.perform(get("/api/orders/{orderId}", 1L))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.message").value("Authentication required"));
+		mockMvc.perform(post("/api/orders/{orderId}/cancel", 1L))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.message").value("Authentication required"));
 	}
@@ -135,6 +185,37 @@ class SecurityConfigTests {
 					.andExpect(status().isOk());
 			mockMvc.perform(delete("/api/products/{id}", 1L).header("Authorization", bearerToken))
 					.andExpect(status().isOk());
+		}
+	}
+
+	@Test
+	void vendorAndAdminTokensAreForbiddenFromAllCartRoutes() throws Exception {
+		for (String role : new String[]{"VENDOR", "ADMIN"}) {
+			String bearerToken = "Bearer " + token("7", role, ISSUER, Instant.now().plusSeconds(900));
+			mockMvc.perform(get("/api/cart").header("Authorization", bearerToken))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.message").value("Access denied"));
+			mockMvc.perform(post("/api/cart/items").header("Authorization", bearerToken))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.message").value("Access denied"));
+			mockMvc.perform(put("/api/cart/items/{itemId}", 1L).header("Authorization", bearerToken))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.message").value("Access denied"));
+			mockMvc.perform(delete("/api/cart/items/{itemId}", 1L).header("Authorization", bearerToken))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.message").value("Access denied"));
+			mockMvc.perform(post("/api/cart/checkout").header("Authorization", bearerToken))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.message").value("Access denied"));
+			mockMvc.perform(get("/api/orders").header("Authorization", bearerToken))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.message").value("Access denied"));
+			mockMvc.perform(get("/api/orders/{orderId}", 1L).header("Authorization", bearerToken))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.message").value("Access denied"));
+			mockMvc.perform(post("/api/orders/{orderId}/cancel", 1L).header("Authorization", bearerToken))
+					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.message").value("Access denied"));
 		}
 	}
 
@@ -264,6 +345,46 @@ class SecurityConfigTests {
 		@PutMapping("/api/products/{id}")
 		String updateProduct(@PathVariable Long id) {
 			return "updated";
+		}
+
+		@GetMapping("/api/cart")
+		String getCart() {
+			return "cart";
+		}
+
+		@PostMapping("/api/cart/items")
+		String addCartItem() {
+			return "added";
+		}
+
+		@PutMapping("/api/cart/items/{itemId}")
+		String updateCartItem(@PathVariable Long itemId) {
+			return "updated";
+		}
+
+		@DeleteMapping("/api/cart/items/{itemId}")
+		String deleteCartItem(@PathVariable Long itemId) {
+			return "deleted";
+		}
+
+		@PostMapping("/api/cart/checkout")
+		String checkout() {
+			return "checked out";
+		}
+
+		@GetMapping("/api/orders")
+		String getOrders() {
+			return "orders";
+		}
+
+		@GetMapping("/api/orders/{orderId}")
+		String getOrder(@PathVariable Long orderId) {
+			return "order";
+		}
+
+		@PostMapping("/api/orders/{orderId}/cancel")
+		String cancelOrder(@PathVariable Long orderId) {
+			return "cancelled";
 		}
 	}
 }

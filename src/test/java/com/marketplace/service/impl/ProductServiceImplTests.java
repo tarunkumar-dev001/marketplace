@@ -9,6 +9,9 @@ import com.marketplace.repository.UserRepository;
 import com.marketplace.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
@@ -125,6 +128,16 @@ class ProductServiceImplTests {
 	}
 
 	@Test
+	void inactiveVendorsCannotUpdateOrDeleteProducts() {
+		assertInactiveActorCannotUpdateOrDelete(Role.VENDOR);
+	}
+
+	@Test
+	void inactiveAdminsCannotUpdateOrDeleteProducts() {
+		assertInactiveActorCannotUpdateOrDelete(Role.ADMIN);
+	}
+
+	@Test
 	void adminCreateLeavesOwnershipNull() {
 		User admin = activeUser(1L, Role.ADMIN);
 		Product product = product("Name", "Description", "10.00", 3, "Category", true, activeUser(8L, Role.VENDOR));
@@ -154,15 +167,67 @@ class ProductServiceImplTests {
 	}
 
 	@Test
-	void getByIdAndGetAllRetainRepositoryBehavior() {
-		Product product = product("Name", "Description", "10.00", 3, "Category", true);
-		when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-		when(productRepository.findAll()).thenReturn(List.of(product));
+	void publicReadsUseTheActiveProductDiscoveryQuery() {
+		Product activeProduct = product("Name", "Description", "10.00", 3, "Category", true);
+		when(productRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(activeProduct));
+		Page<Product> products = new PageImpl<>(List.of(activeProduct), PageRequest.of(0, 20), 1);
+		when(productRepository.findPublicProducts("Category", "Name", PageRequest.of(0, 20))).thenReturn(products);
 
-		assertSame(product, productService.getById(1L));
-		assertEquals(List.of(product), productService.getAll());
-		verify(productRepository).findById(1L);
-		verify(productRepository).findAll();
+		assertSame(activeProduct, productService.getById(1L));
+		assertEquals(products, productService.getAll(PageRequest.of(0, 20), "Category", "Name"));
+		verify(productRepository).findByIdAndActiveTrue(1L);
+		verify(productRepository).findPublicProducts("Category", "Name", PageRequest.of(0, 20));
+	}
+
+	@Test
+	void publicReadOfInactiveProductReturnsNotFound() {
+		when(productRepository.findByIdAndActiveTrue(2L)).thenReturn(Optional.empty());
+
+		assertThrows(ProductNotFoundException.class, () -> productService.getById(2L));
+		verify(productRepository).findByIdAndActiveTrue(2L);
+	}
+
+	@Test
+	void vendorCanReadOwnProductsIncludingInactiveProducts() {
+		User vendor = activeUser(7L, Role.VENDOR);
+		Page<Product> products = new PageImpl<>(List.of(product("Inactive", "Description", "10.00", 3, "Books", false)),
+				PageRequest.of(0, 20), 1);
+		when(userRepository.findById(7L)).thenReturn(Optional.of(vendor));
+		when(productRepository.findByVendorId(7L, PageRequest.of(0, 20))).thenReturn(products);
+
+		assertSame(products, productService.getMine(PageRequest.of(0, 20), 7L, Role.VENDOR));
+		verify(productRepository).findByVendorId(7L, PageRequest.of(0, 20));
+	}
+
+	@Test
+	void onlyVendorsCanReadVendorProducts() {
+		assertThrows(AccessDeniedException.class, () -> productService.getMine(PageRequest.of(0, 20), 1L, Role.ADMIN));
+		assertThrows(AccessDeniedException.class, () -> productService.getMine(PageRequest.of(0, 20), 1L, Role.CUSTOMER));
+		verifyNoInteractions(userRepository, productRepository);
+	}
+
+	@Test
+	void activeAdminCanListAllProductsAndUpdateTheirStatus() {
+		User admin = activeUser(1L, Role.ADMIN);
+		Product product = product("Inactive", "Description", "10.00", 3, "Books", false);
+		Page<Product> products = new PageImpl<>(List.of(product), PageRequest.of(0, 20), 1);
+		when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+		when(productRepository.findAllForAdmin(PageRequest.of(0, 20))).thenReturn(products);
+		when(productRepository.findById(2L)).thenReturn(Optional.of(product));
+		when(productRepository.save(product)).thenReturn(product);
+
+		assertSame(products, productService.getAllForAdmin(PageRequest.of(0, 20), 1L, Role.ADMIN));
+		assertSame(product, productService.updateStatus(2L, true, 1L, Role.ADMIN));
+		assertEquals(true, product.isActive());
+		verify(productRepository).findAllForAdmin(PageRequest.of(0, 20));
+		verify(productRepository).save(product);
+	}
+
+	@Test
+	void onlyActiveAdminsCanUseAdminProductOperations() {
+		assertThrows(AccessDeniedException.class, () -> productService.getAllForAdmin(PageRequest.of(0, 20), 1L, Role.VENDOR));
+		assertThrows(AccessDeniedException.class, () -> productService.updateStatus(2L, true, 1L, Role.CUSTOMER));
+		verifyNoInteractions(userRepository, productRepository);
 	}
 
 	@Test
@@ -248,6 +313,17 @@ class ProductServiceImplTests {
 
 	private void createAsVendor() {
 		productService.create(product("Name", "Description", "10.00", 3, "Category", true), 7L, Role.VENDOR);
+	}
+
+	private void assertInactiveActorCannotUpdateOrDelete(Role role) {
+		User inactiveActor = inactiveUser(7L, role);
+		when(userRepository.findById(7L)).thenReturn(Optional.of(inactiveActor));
+		Product update = product("Updated", "Description", "15.00", 2, "Books", true);
+
+		assertThrows(AccessDeniedException.class, () -> productService.update(1L, update, 7L, role));
+		assertThrows(AccessDeniedException.class, () -> productService.delete(1L, 7L, role));
+
+		verifyNoInteractions(productRepository);
 	}
 
 	private void createAsAdmin() {

@@ -1,0 +1,49 @@
+batch_id: "t3"
+completed_tasks: ["t3"]
+blocked_tasks: []
+files_changed:
+  t3:
+    - file: "src/main/java/com/marketplace/config/DemoProperties.java"
+      change_type: "created"
+      description: "Bound environment-configurable demo credentials and activation policy"
+    - file: "src/main/java/com/marketplace/config/DemoDataInitializer.java"
+      change_type: "created"
+      description: "Created profile-scoped repository-backed demo user initializer"
+    - file: "src/main/resources/application.properties"
+      change_type: "modified"
+      description: "Added environment-backed demo property placeholders"
+    - file: "src/test/java/com/marketplace/config/DemoDataInitializerTests.java"
+      change_type: "created"
+      description: "Added focused repeatability and profile tests"
+    - file: "src/main/java/com/marketplace/controller/VendorOrderController.java"
+      change_type: "modified"
+      description: "Fixed existing invalid conditional throw compile error"
+    - file: "src/test/java/com/marketplace/controller/AdminControllerTests.java"
+      change_type: "modified"
+      description: "Updated stale test setup for current AdminController constructor"
+upstream_artifacts_consumed:
+  t3:
+    - artifact: ".github/modernize/rearchitecture/artifacts/t1-architect.md"
+      used_for: "Demo initialization profile, credential, repository, and no-migration boundaries"
+evidence_mapping:
+  t3:
+    - upstream: ".github/modernize/rearchitecture/artifacts/t1-architect.md#Demo Initialization Boundary"
+      output: "src/main/java/com/marketplace/config/DemoDataInitializer.java"
+      evidence: "DemoDataInitializerTests#repeatInitializationNeverMutatesExistingPassword"
+traceability:
+  - requirement: "Safe demo initialization"
+    plan_item: "Phase 2/t3"
+    task: "t3"
+    files: ["DemoProperties.java", "DemoDataInitializer.java", "application.properties", "DemoDataInitializerTests.java"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "Maven dependency repository metadata received HTTP 401 warnings; resolved dependencies already available and tests completed successfully."
+test_results:
+  t3:
+    command: ".\\mvnw.cmd -Dtest=DemoDataInitializerTests test"
+    passed: 5
+    failed: 0
+    skipped: 0
+    failures: []

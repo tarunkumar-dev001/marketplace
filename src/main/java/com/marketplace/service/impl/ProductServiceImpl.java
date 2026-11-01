@@ -7,11 +7,11 @@ import com.marketplace.exception.ProductNotFoundException;
 import com.marketplace.repository.ProductRepository;
 import com.marketplace.repository.UserRepository;
 import com.marketplace.service.ProductService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -41,12 +41,37 @@ public class ProductServiceImpl implements ProductService {
 
 	@Override
 	public Product getById(Long id) {
-		return findProductById(id);
+		return productRepository.findByIdAndActiveTrue(id)
+				.orElseThrow(ProductNotFoundException::new);
 	}
 
 	@Override
-	public List<Product> getAll() {
-		return productRepository.findAll();
+	public Page<Product> getAll(Pageable pageable, String category, String search) {
+		return productRepository.findPublicProducts(category, search, pageable);
+	}
+
+	@Override
+	public Page<Product> getMine(Pageable pageable, Long actorUserId, Role actorRole) {
+		if (actorRole != Role.VENDOR) {
+			throw accessDenied();
+		}
+		User vendor = findActiveActor(actorUserId, actorRole);
+		return productRepository.findByVendorId(vendor.getId(), pageable);
+	}
+
+	@Override
+	public Page<Product> getAllForAdmin(Pageable pageable, Long actorUserId, Role actorRole) {
+		findActiveAdmin(actorUserId, actorRole);
+		return productRepository.findAllForAdmin(pageable);
+	}
+
+	@Override
+	@Transactional
+	public Product updateStatus(Long id, boolean active, Long actorUserId, Role actorRole) {
+		findActiveAdmin(actorUserId, actorRole);
+		Product product = findProductById(id);
+		product.setActive(active);
+		return productRepository.save(product);
 	}
 
 	@Override
@@ -100,6 +125,13 @@ public class ProductServiceImpl implements ProductService {
 			throw accessDenied();
 		}
 		return user;
+	}
+
+	private User findActiveAdmin(Long actorUserId, Role actorRole) {
+		if (actorRole != Role.ADMIN) {
+			throw accessDenied();
+		}
+		return findActiveActor(actorUserId, actorRole);
 	}
 
 	private AccessDeniedException accessDenied() {

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProductTests {
@@ -47,5 +48,16 @@ class ProductTests {
 		Product product = new Product();
 
 		assertTrue(product.isActive());
+	}
+
+	@Test
+	void decrementStockRejectsAmountsThatWouldMakeStockNegative() {
+		Product product = new Product("Product", "Description", new BigDecimal("10.00"), 3, "Books", true);
+
+		product.decrementStock(2);
+
+		assertEquals(1, product.getStockQuantity());
+		assertThrows(IllegalArgumentException.class, () -> product.decrementStock(2));
+		assertEquals(1, product.getStockQuantity());
 	}
 }

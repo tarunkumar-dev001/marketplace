@@ -20,6 +20,8 @@ A RESTful marketplace backend built with Java and Spring Boot. The project demon
 - Account registration and login
 - JWT access tokens
 - Role-based authorization for product management
+- Customer carts, checkout, and order history
+- Administrative user and product management
 - Product creation, listing, retrieval, updating, and deletion
 - Request validation
 - Consistent API response format
@@ -189,7 +191,7 @@ Authorization: Bearer <access-token>
 
 | Method | Endpoint | Access |
 |---|---|---|
-| GET | `/api/health` | Authenticated |
+| GET | `/api/health` | Public |
 
 ### Products
 
@@ -242,6 +244,7 @@ The current migration files are:
 
 - `V1__initial_schema.sql`
 - `V2__add_product_vendor.sql`
+- `V3__add_cart_and_order_tables.sql`
 
 Flyway records applied migrations in `flyway_schema_history`. Hibernate schema validation is enabled; schema changes should be introduced through migrations.
 
@@ -253,7 +256,31 @@ Run the full test suite:
 .\mvnw.cmd clean test
 ```
 
-The project was last verified locally with **76 tests passing, 0 failures, 0 errors, and 0 skipped tests**.
+## Frontend
+
+The React customer frontend is isolated in [`frontend/`](frontend/). It uses Vite, TypeScript, Tailwind CSS, Axios, and React Router.
+
+```powershell
+cd frontend
+Copy-Item .env.example .env
+npm.cmd install
+npm.cmd run dev
+```
+
+The frontend reads `VITE_API_BASE_URL` from `frontend/.env`; its local default is `http://localhost:8080`.
+
+## Production deployment
+
+The backend production profile is `prod`, configured in `src/main/resources/application-prod.properties`. For Render, set `SPRING_PROFILES_ACTIVE=prod`; the profile uses Render's `PORT` environment variable and falls back to port `8080` when it is absent.
+
+Configure these backend environment variables in Render (do not put their values in source control):
+
+- `SPRING_PROFILES_ACTIVE=prod`
+- `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`
+- `MARKETPLACE_JWT_SECRET_BASE64` and `MARKETPLACE_JWT_ISSUER`
+- `MARKETPLACE_CORS_ALLOWED_ORIGIN` — the exact deployed Netlify site origin, for example `https://your-site.netlify.app` (no trailing slash)
+
+The frontend can be deployed from the `frontend/` directory on Netlify. Set `VITE_API_BASE_URL` to the deployed backend URL. The `frontend/public/_redirects` rule serves the SPA entry point for client-side routes.
 
 ## Security Notes
 
@@ -265,7 +292,7 @@ The project was last verified locally with **76 tests passing, 0 failures, 0 err
 
 ## Current Scope
 
-This repository documents the implemented backend controllers for authentication, health checks, and product management. It does not claim unimplemented shopping-cart, order-processing, payment, or checkout functionality.
+The backend supports authentication, health checks, product and administrative management, customer carts, checkout, and order history. Payment processing is not implemented.
 
 ## License
 

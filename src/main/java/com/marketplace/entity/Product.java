@@ -86,6 +86,24 @@ public class Product {
 		this.active = active;
 	}
 
+	public void decrementStock(Integer quantity) {
+		if (quantity == null || quantity <= 0 || stockQuantity == null || stockQuantity < quantity) {
+			throw new IllegalArgumentException("Insufficient stock");
+		}
+		stockQuantity -= quantity;
+	}
+
+	public void restoreStock(Integer quantity) {
+		if (quantity == null || quantity <= 0 || stockQuantity == null) {
+			throw new IllegalStateException("Invalid stock restoration");
+		}
+		try {
+			stockQuantity = Math.addExact(stockQuantity, quantity);
+		} catch (ArithmeticException exception) {
+			throw new IllegalStateException("Stock exceeds supported range", exception);
+		}
+	}
+
 	@PrePersist
 	void onCreate() {
 		Instant now = Instant.now();
@@ -126,6 +144,10 @@ public class Product {
 
 	public boolean isActive() {
 		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 
 	public Instant getCreatedAt() {
