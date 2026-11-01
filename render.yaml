@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: marketplace-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod,demo
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: MARKETPLACE_JWT_SECRET_BASE64
+        sync: false
+      - key: MARKETPLACE_JWT_ISSUER
+        sync: false
+      - key: MARKETPLACE_CORS_ALLOWED_ORIGIN
+        sync: false
+      - key: MARKETPLACE_JWT_ACCESS_TOKEN_TTL_SECONDS
+        value: "28800"
+      - key: MARKETPLACE_DEMO_ACTIVATE_EXISTING_USERS
+        value: "true"
+      - key: MARKETPLACE_DEMO_ADMIN_EMAIL
+        sync: false
+      - key: MARKETPLACE_DEMO_ADMIN_PASSWORD
+        sync: false
+      - key: MARKETPLACE_DEMO_VENDOR_EMAIL
+        sync: false
+      - key: MARKETPLACE_DEMO_VENDOR_PASSWORD
+        sync: false
+      - key: MARKETPLACE_DEMO_CUSTOMER_EMAIL
+        sync: false
+      - key: MARKETPLACE_DEMO_CUSTOMER_PASSWORD
+        sync: false

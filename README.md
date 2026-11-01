@@ -278,7 +278,27 @@ npm.cmd run dev
 
 The frontend reads `VITE_API_BASE_URL` from `frontend/.env`; its local default is `http://localhost:8080`.
 
+## Live demo
+
+- Frontend: <https://your-netlify-site.netlify.app>
+
+| Role | Demo email |
+|---|---|
+| Admin | `<MARKETPLACE_DEMO_ADMIN_EMAIL>` |
+| Vendor | `<MARKETPLACE_DEMO_VENDOR_EMAIL>` |
+| Customer | `<MARKETPLACE_DEMO_CUSTOMER_EMAIL>` |
+
+Demo passwords are shown on the login page demo account buttons.
+
 ## Production deployment
+
+### Deploy
+
+Provision the MySQL database and configure a Render Aiven data source using the JDBC format:
+
+```text
+jdbc:mysql://HOST:PORT/defaultdb?sslMode=REQUIRED
+```
 
 The backend production profile is `prod`, configured in `src/main/resources/application-prod.properties`. For Render, set `SPRING_PROFILES_ACTIVE=prod`; the profile uses Render's `PORT` environment variable and falls back to port `8080` when it is absent.
 
